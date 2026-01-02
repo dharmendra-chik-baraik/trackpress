@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2024-01-02",
+  "requires": "5.6",
+  "tested": "6.4",
+  "requires_php": "7.4",
+  "download_url": "https://github.com/dharmendra-chik-baraik/trackpress/releases/latest/download/trackpress.zip",
+  "changelog": {
+    "1.0.0": [
+      "Initial release of TrackPress",
+      "User activity tracking",
+      "Visitor tracking",
+      "Admin actions logging",
+      "Customizable settings"
+    ]
+  }
+}

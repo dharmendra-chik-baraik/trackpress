@@ -3,6 +3,8 @@ namespace TrackPress\Admin;
 
 class Admin_Pages
 {
+    private $plugin_data;
+    private $remote_version;
 
     public function __construct()
     {
@@ -10,6 +12,19 @@ class Admin_Pages
         add_action('admin_init', [$this, 'init_settings']);
         add_filter('plugin_action_links_' . TRACKPRESS_PLUGIN_BASENAME, [$this, 'add_plugin_action_links']);
         add_action('admin_init', [$this, 'handle_table_actions']);
+
+        // Initialize plugin data
+        if (!function_exists('get_plugin_data')) {
+            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        $this->plugin_data = get_plugin_data(TRACKPRESS_PLUGIN_FILE);
+
+        // Check for updates periodically
+        add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_update']);
+        add_filter('plugins_api', [$this, 'plugin_info'], 20, 3);
+
+        // Add update notice
+        add_action('admin_notices', [$this, 'update_notice']);
     }
 
     public function add_admin_menus()
@@ -55,6 +70,14 @@ class Admin_Pages
             [$this, 'render_admin_page']
         );
 
+        add_submenu_page(
+            'trackpress',
+            'TrackPress - About',
+            'About',
+            $capability,
+            'trackpress-about',
+            [$this, 'render_about_page']
+        );
         add_submenu_page(
             'trackpress',
             'TrackPress Settings',
@@ -286,6 +309,7 @@ class Admin_Pages
     {
         $settings_link = '<a href="' . admin_url('admin.php?page=trackpress-settings') . '">' . __('Settings', 'trackpress') . '</a>';
         $logs_link = '<a href="' . admin_url('admin.php?page=trackpress') . '">' . __('Dashboard', 'trackpress') . '</a>';
+        $about_link = '<a href="' . admin_url('admin.php?page=trackpress-about') . '">' . __('About', 'trackpress') . '</a>';
         array_unshift($links, $settings_link, $logs_link);
         return $links;
     }
@@ -304,5 +328,233 @@ class Admin_Pages
 
         $settings = get_option('trackpress_settings', []);
         return wp_parse_args($settings, $defaults);
+    }
+
+    // updates functionality 
+
+    // Render About page
+    public function render_about_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'trackpress'));
+        }
+
+        $current_version = $this->plugin_data['Version'];
+        $remote_info = $this->get_remote_info();
+        $is_update_available = $remote_info && version_compare($remote_info->version, $current_version, '>');
+        
+        // Get plugin features
+        $features = [
+            [
+                'title' => 'User Activity Tracking',
+                'description' => 'Track and log all user activities including logins, logouts, and profile updates.',
+                'icon' => 'dashicons-admin-users'
+            ],
+            [
+                'title' => 'Visitor Tracking',
+                'description' => 'Monitor anonymous visitors with detailed information about their visits.',
+                'icon' => 'dashicons-visibility'
+            ],
+            [
+                'title' => 'Admin Actions Logging',
+                'description' => 'Keep records of all administrative actions for security and accountability.',
+                'icon' => 'dashicons-shield'
+            ],
+            [
+                'title' => 'Advanced Filtering',
+                'description' => 'Filter logs by date, user, IP address, and specific actions.',
+                'icon' => 'dashicons-filter'
+            ],
+            [
+                'title' => 'Data Cleanup',
+                'description' => 'Automatically clean up old logs based on customizable retention periods.',
+                'icon' => 'dashicons-trash'
+            ],
+            [
+                'title' => 'Export Capabilities',
+                'description' => 'Export logs in various formats for analysis and reporting.',
+                'icon' => 'dashicons-download'
+            ],
+            [
+                'title' => 'Role-Based Tracking',
+                'description' => 'Configure which user roles to track or exclude from tracking.',
+                'icon' => 'dashicons-groups'
+            ],
+            [
+                'title' => 'Real-time Dashboard',
+                'description' => 'Get real-time insights with comprehensive statistics and charts.',
+                'icon' => 'dashicons-chart-line'
+            ]
+        ];
+
+        // Developer information
+        $developers = [
+            [
+                'name' => 'Dharmendra Chik Baraik',
+                'role' => 'Lead Developer',
+                'contact' => 'https://github.com/dharmendra-chik-baraik'
+            ]
+        ];
+
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/about.php';
+    }
+
+    // Get remote version information from GitHub
+    private function get_remote_info()
+    {
+        $transient_key = 'trackpress_remote_info';
+        $remote_info = get_transient($transient_key);
+
+        if (false === $remote_info) {
+            // First try local version.json
+            $version_file = TRACKPRESS_PLUGIN_DIR . 'version.json';
+            
+            if (file_exists($version_file)) {
+                $local_data = json_decode(file_get_contents($version_file));
+                if ($local_data) {
+                    $remote_info = $local_data;
+                    set_transient($transient_key, $remote_info, 12 * HOUR_IN_SECONDS);
+                    return $remote_info;
+                }
+            }
+
+            // Fallback to GitHub API
+            $github_api_url = 'https://api.github.com/repos/dharmendra-chik-baraik/trackpress/releases/latest';
+            
+            $response = wp_remote_get($github_api_url, [
+                'timeout' => 10,
+                'headers' => [
+                    'Accept' => 'application/vnd.github.v3+json'
+                ]
+            ]);
+
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+                $github_data = json_decode(wp_remote_retrieve_body($response));
+                
+                if ($github_data) {
+                    $remote_info = new \stdClass();
+                    $remote_info->version = ltrim($github_data->tag_name, 'v');
+                    $remote_info->last_updated = $github_data->published_at;
+                    $remote_info->download_url = $github_data->zipball_url;
+                    $remote_info->changelog = ['Latest' => [$github_data->body]];
+                    
+                    set_transient($transient_key, $remote_info, 12 * HOUR_IN_SECONDS);
+                }
+            }
+        }
+
+        return $remote_info;
+    }
+
+    // Check for updates
+    public function check_for_update($transient)
+    {
+        if (empty($transient->checked)) {
+            return $transient;
+        }
+
+        $remote_info = $this->get_remote_info();
+        
+        if ($remote_info && version_compare($remote_info->version, $this->plugin_data['Version'], '>')) {
+            $plugin_slug = plugin_basename(TRACKPRESS_PLUGIN_FILE);
+            
+            $obj = new \stdClass();
+            $obj->slug = dirname($plugin_slug);
+            $obj->new_version = $remote_info->version;
+            $obj->url = 'https://github.com/dharmendra-chik-baraik/trackpress';
+            $obj->package = $remote_info->download_url;
+            $obj->tested = isset($remote_info->tested) ? $remote_info->tested : '';
+            $obj->requires = isset($remote_info->requires) ? $remote_info->requires : '';
+            $obj->requires_php = isset($remote_info->requires_php) ? $remote_info->requires_php : '';
+            
+            $transient->response[$plugin_slug] = $obj;
+        }
+
+        return $transient;
+    }
+
+    // Plugin information for update modal
+    public function plugin_info($false, $action, $response)
+    {
+        if ($action !== 'plugin_information') {
+            return false;
+        }
+
+        $plugin_slug = plugin_basename(TRACKPRESS_PLUGIN_FILE);
+        
+        if (empty($response->slug) || $response->slug !== dirname($plugin_slug)) {
+            return false;
+        }
+
+        $remote_info = $this->get_remote_info();
+        
+        if (!$remote_info) {
+            return false;
+        }
+
+        $response = new \stdClass();
+        $response->slug = dirname($plugin_slug);
+        $response->plugin_name = $this->plugin_data['Name'];
+        $response->name = $this->plugin_data['Name'];
+        $response->version = $remote_info->version;
+        $response->author = $this->plugin_data['Author'];
+        $response->author_profile = 'https://github.com/dharmendra-chik-baraik';
+        $response->homepage = 'https://github.com/dharmendra-chik-baraik/trackpress';
+        $response->requires = isset($remote_info->requires) ? $remote_info->requires : '';
+        $response->tested = isset($remote_info->tested) ? $remote_info->tested : '';
+        $response->requires_php = isset($remote_info->requires_php) ? $remote_info->requires_php : '';
+        $response->downloaded = 0;
+        $response->last_updated = $remote_info->last_updated;
+        $response->sections = [
+            'description' => $this->plugin_data['Description'],
+            'changelog' => $this->format_changelog($remote_info->changelog)
+        ];
+        $response->download_link = $remote_info->download_url;
+        $response->banners = [
+            'low' => TRACKPRESS_PLUGIN_URL . 'assets/banner-772x250.png',
+            'high' => TRACKPRESS_PLUGIN_URL . 'assets/banner-1544x500.png'
+        ];
+
+        return $response;
+    }
+
+    // Format changelog for display
+    private function format_changelog($changelog)
+    {
+        if (is_array($changelog)) {
+            $output = '';
+            foreach ($changelog as $version => $changes) {
+                $output .= '<h4>' . esc_html($version) . '</h4>';
+                $output .= '<ul>';
+                foreach ($changes as $change) {
+                    $output .= '<li>' . esc_html($change) . '</li>';
+                }
+                $output .= '</ul>';
+            }
+            return $output;
+        }
+        return '<p>' . esc_html($changelog) . '</p>';
+    }
+
+    // Update notice in admin
+    public function update_notice()
+    {
+        $remote_info = $this->get_remote_info();
+        
+        if ($remote_info && version_compare($remote_info->version, $this->plugin_data['Version'], '>')) {
+            ?>
+            <div class="notice notice-warning is-dismissible">
+                <p>
+                    <strong><?php echo esc_html($this->plugin_data['Name']); ?>:</strong>
+                    <?php printf(
+                        __('A new version (%s) is available. <a href="%s">View update details</a> or <a href="%s">update now</a>.', 'trackpress'),
+                        esc_html($remote_info->version),
+                        admin_url('admin.php?page=trackpress-about'),
+                        admin_url('update-core.php')
+                    ); ?>
+                </p>
+            </div>
+            <?php
+        }
     }
 }
