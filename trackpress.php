@@ -1,11 +1,13 @@
 <?php
 /**
  * Plugin Name: TrackPress
- * Plugin URI: https://example.com/trackpress
+ * Plugin URI: https://github.com/dharmendra-chik-baraik/trackpress
  * Description: Minimal user and visitor tracking plugin with separate logs for users, visitors, and admin actions.
  * Version: 1.0.0
+ * Requires at least: 5.0
+ * Requires PHP: 7.2
  * Author: Dharmendra Chik Baraik
- * Author URI: https://example.com
+ * Author URI: https://github.com/dharmendra-chik-baraik
  * License: GPL v2 or later
  * Text Domain: trackpress
  */
@@ -89,3 +91,4 @@ register_deactivation_hook(__FILE__, function() {
 
 // Start the plugin
 add_action('plugins_loaded', 'trackpress_init');
+

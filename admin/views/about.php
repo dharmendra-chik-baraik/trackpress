@@ -10,7 +10,7 @@
             TrackPress
             <span class="version">v<?php echo esc_html($current_version); ?></span>
         </h1>
-        
+
         <?php if ($is_update_available): ?>
             <div class="update-available notice notice-warning inline">
                 <p>
@@ -61,15 +61,15 @@
                     </tr>
                     <tr>
                         <th><?php _e('Last Updated', 'trackpress'); ?></th>
-                        <td><?php echo esc_html($this->plugin_data['Author']); ?></td>
+                        <td><?php echo wp_kses_post($plugin_info['author']); ?></td>
                     </tr>
                     <tr>
                         <th><?php _e('Requires WordPress', 'trackpress'); ?></th>
-                        <td><?php echo esc_html($this->plugin_data['RequiresWP']); ?></td>
+                        <td><?php echo esc_html($plugin_info['requires']); ?></td>
                     </tr>
                     <tr>
                         <th><?php _e('Tested up to', 'trackpress'); ?></th>
-                        <td><?php echo esc_html($this->plugin_data['TestedUpTo']); ?></td>
+                        <td><?php echo esc_html($plugin_info['tested']); ?></td>
                     </tr>
                     <?php if ($remote_info): ?>
                         <tr>
@@ -124,7 +124,8 @@
         <div class="about-section support-section">
             <h2><?php _e('Support & Resources', 'trackpress'); ?></h2>
             <div class="support-links">
-                <a href="https://github.com/dharmendra-chik-baraik/trackpress" target="_blank" class="button button-primary">
+                <a href="https://github.com/dharmendra-chik-baraik/trackpress" target="_blank"
+                    class="button button-primary">
                     <span class="dashicons dashicons-book-alt"></span>
                     <?php _e('Documentation', 'trackpress'); ?>
                 </a>
@@ -142,181 +143,181 @@
 </div>
 
 <style>
-.trackpress-about {
-    max-width: 1200px;
-}
+    .trackpress-about {
+        max-width: 1200px;
+    }
 
-.trackpress-header {
-    background: #fff;
-    padding: 20px;
-    margin: 20px 0;
-    border: 1px solid #c3c4c7;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
-}
+    .trackpress-header {
+        background: #fff;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid #c3c4c7;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    }
 
-.trackpress-title {
-    margin: 0 0 15px 0;
-    font-size: 23px;
-    font-weight: 400;
-    line-height: 1.3;
-}
+    .trackpress-title {
+        margin: 0 0 15px 0;
+        font-size: 23px;
+        font-weight: 400;
+        line-height: 1.3;
+    }
 
-.trackpress-title .version {
-    color: #50575e;
-    font-size: 0.9em;
-    margin-left: 10px;
-    font-weight: normal;
-}
+    .trackpress-title .version {
+        color: #50575e;
+        font-size: 0.9em;
+        margin-left: 10px;
+        font-weight: normal;
+    }
 
-.update-available {
-    margin: 0;
-}
+    .update-available {
+        margin: 0;
+    }
 
-.about-section {
-    background: #fff;
-    padding: 20px;
-    margin: 20px 0;
-    border: 1px solid #c3c4c7;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
-}
+    .about-section {
+        background: #fff;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid #c3c4c7;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    }
 
-.about-section h2 {
-    margin-top: 0;
-    color: #1d2327;
-    font-size: 18px;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dcdcde;
-}
+    .about-section h2 {
+        margin-top: 0;
+        color: #1d2327;
+        font-size: 18px;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #dcdcde;
+    }
 
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.feature-card {
-    border: 1px solid #dcdcde;
-    padding: 15px;
-    background: #f6f7f7;
-}
-
-.feature-card:hover {
-    border-color: #8c8f94;
-}
-
-.feature-icon {
-    color: #2271b1;
-    margin-bottom: 10px;
-    float: left;
-    margin-right: 10px;
-}
-
-.feature-content h3 {
-    margin: 0 0 10px 40px;
-    color: #1d2327;
-    font-size: 16px;
-}
-
-.feature-content p {
-    color: #50575e;
-    margin: 0 0 0 40px;
-    line-height: 1.5;
-}
-
-.version-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.version-table th,
-.version-table td {
-    padding: 15px;
-    border-bottom: 1px solid #dcdcde;
-    text-align: left;
-}
-
-.version-table th {
-    width: 200px;
-    font-weight: 600;
-    color: #1d2327;
-}
-
-.update-badge {
-    background: #d63638;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 2px;
-    font-size: 12px;
-    margin-left: 8px;
-}
-
-.developers-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.developer-card {
-    flex: 1;
-    min-width: 200px;
-    border: 1px solid #dcdcde;
-    padding: 15px;
-    background: #f6f7f7;
-}
-
-.developer-info h3 {
-    margin: 0 0 5px 0;
-    color: #1d2327;
-}
-
-.developer-info .role {
-    color: #50575e;
-    font-style: italic;
-    margin: 0 0 10px 0;
-}
-
-.license-card {
-    background: #f6f7f7;
-    padding: 15px;
-    border-left: 4px solid #72aee6;
-}
-
-.support-links {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 20px 0 0 0;
-}
-
-.support-links .button {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
-@media (max-width: 782px) {
     .features-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
     }
-    
-    .developers-grid {
-        flex-direction: column;
-        gap: 15px;
+
+    .feature-card {
+        border: 1px solid #dcdcde;
+        padding: 15px;
+        background: #f6f7f7;
     }
-    
-    .support-links {
-        flex-direction: column;
-        align-items: flex-start;
+
+    .feature-card:hover {
+        border-color: #8c8f94;
     }
-    
-    .support-links .button {
-        width: 100%;
-        justify-content: center;
+
+    .feature-icon {
+        color: #2271b1;
         margin-bottom: 10px;
+        float: left;
+        margin-right: 10px;
     }
-}
+
+    .feature-content h3 {
+        margin: 0 0 10px 40px;
+        color: #1d2327;
+        font-size: 16px;
+    }
+
+    .feature-content p {
+        color: #50575e;
+        margin: 0 0 0 40px;
+        line-height: 1.5;
+    }
+
+    .version-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .version-table th,
+    .version-table td {
+        padding: 15px;
+        border-bottom: 1px solid #dcdcde;
+        text-align: left;
+    }
+
+    .version-table th {
+        width: 200px;
+        font-weight: 600;
+        color: #1d2327;
+    }
+
+    .update-badge {
+        background: #d63638;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 2px;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+
+    .developers-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .developer-card {
+        flex: 1;
+        min-width: 200px;
+        border: 1px solid #dcdcde;
+        padding: 15px;
+        background: #f6f7f7;
+    }
+
+    .developer-info h3 {
+        margin: 0 0 5px 0;
+        color: #1d2327;
+    }
+
+    .developer-info .role {
+        color: #50575e;
+        font-style: italic;
+        margin: 0 0 10px 0;
+    }
+
+    .license-card {
+        background: #f6f7f7;
+        padding: 15px;
+        border-left: 4px solid #72aee6;
+    }
+
+    .support-links {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 20px 0 0 0;
+    }
+
+    .support-links .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    @media (max-width: 782px) {
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .developers-grid {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .support-links {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .support-links .button {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+    }
 </style>
