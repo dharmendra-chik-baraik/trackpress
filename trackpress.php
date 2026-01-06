@@ -10,6 +10,7 @@
  * Author URI: https://github.com/dharmendra-chik-baraik
  * License: GPL v2 or later
  * Text Domain: trackpress
+ * Domain Path: /languages
  */
 
 // Prevent direct access
@@ -89,6 +90,28 @@ register_deactivation_hook(__FILE__, function() {
     wp_clear_scheduled_hook('trackpress_cleanup_old_logs');
 });
 
-// Start the plugin
-add_action('plugins_loaded', 'trackpress_init');
+// Load translations on init (required for WordPress 6.7+)
+add_action('init', function() {
+    load_plugin_textdomain('trackpress', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    
+    // Now initialize the plugin AFTER translations are loaded
+    trackpress_init();
+});
 
+// Add error logging to trace the source
+add_action('init', function() {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('TrackPress: Checking for deprecated function calls...');
+        // Set error handler to capture backtrace
+        set_error_handler(function($errno, $errstr, $errfile, $errline) {
+            if (strpos($errstr, 'strpos(): Passing null') !== false || 
+                strpos($errstr, 'str_replace(): Passing null') !== false) {
+                error_log('TrackPress Deprecation Warning: ' . $errstr);
+                error_log('File: ' . $errfile . ' Line: ' . $errline);
+                // Get backtrace
+                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
+                error_log('Backtrace: ' . print_r($trace, true));
+            }
+        }, E_DEPRECATED);
+    }
+});

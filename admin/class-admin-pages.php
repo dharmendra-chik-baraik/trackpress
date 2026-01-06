@@ -115,9 +115,9 @@ class Admin_Pages
 
         // Debug page (hidden, for testing only)
         add_submenu_page(
-            null, // Hidden from menu
+            '', // Hidden from menu
             'TrackPress Debug',
-            '',
+            'Debug Page',
             $capability,
             'trackpress-debug',
             [$this, 'render_debug_page']
@@ -421,7 +421,9 @@ class Admin_Pages
             [
                 'name' => 'Dharmendra Chik Baraik',
                 'role' => 'Lead Developer',
-                'github' => 'https://github.com/dharmendra-chik-baraik'
+                'website' => 'https://github.com/dharmendra-chik-baraik',
+                'email' => 'dcbaraik143@gmail.com',
+                'github' => 'https://github.com/dharmendra-chik-baraik',
             ]
         ];
 

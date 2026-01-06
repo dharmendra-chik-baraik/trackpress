@@ -94,12 +94,26 @@
                         <div class="developer-info">
                             <h3><?php echo esc_html($developer['name']); ?></h3>
                             <p class="role"><?php echo esc_html($developer['role']); ?></p>
-                            <p class="contact">
-                                <a href="<?php echo esc_url($developer['contact']); ?>" target="_blank">
-                                    <span class="dashicons dashicons-external"></span>
-                                    <?php _e('GitHub Profile', 'trackpress'); ?>
-                                </a>
-                            </p>
+                            <div class="flex">
+                                <p class="github">
+                                    <a href="<?php echo esc_url($developer['github']); ?>" target="_blank">
+                                        <span class="dashicons dashicons-external"></span>
+                                        <?php _e('GitHub Profile', 'trackpress'); ?>
+                                    </a>
+                                </p>
+                                <p class="email">
+                                    <a href="mailto:<?php echo esc_attr($developer['email']); ?>">
+                                        <span class="dashicons dashicons-email-alt"></span>
+                                        <?php echo esc_html($developer['email']); ?>
+                                    </a>
+                                </p>
+                                <p class="website">
+                                    <a href="<?php echo esc_url($developer['website']); ?>" target="_blank">
+                                        <span class="dashicons dashicons-external"></span>
+                                        <?php echo esc_html($developer['website']); ?>
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -296,6 +310,11 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
+    }
+    .flex {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     @media (max-width: 782px) {
