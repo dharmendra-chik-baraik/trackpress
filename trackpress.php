@@ -97,3 +97,26 @@ add_action('init', function() {
     // Now initialize the plugin AFTER translations are loaded
     trackpress_init();
 });
+
+// Add CSS for custom icon
+add_action('admin_head', function() {
+    ?>
+    <style>
+        #toplevel_page_trackpress .wp-menu-image.dashicons-chart-area:before {
+            /* You can't directly set background image on :before easily */
+            /* Better to use dashicon or use the method below */
+        }
+        
+        /* Alternative: Hide dashicon and use background image */
+        #toplevel_page_trackpress .wp-menu-image.dashicons-chart-area {
+            background-image: url('<?php echo TRACKPRESS_PLUGIN_URL; ?>assets/icon.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 20px 20px;
+        }
+        #toplevel_page_trackpress .wp-menu-image.dashicons-chart-area:before {
+            display: none;
+        }
+    </style>
+    <?php
+});

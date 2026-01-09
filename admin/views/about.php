@@ -10,20 +10,7 @@
             TrackPress
             <span class="version">v<?php echo esc_html($current_version); ?></span>
         </h1>
-
-        <?php if ($is_update_available): ?>
-            <div class="update-available notice notice-warning inline">
-                <p>
-                    <span class="dashicons dashicons-update"></span>
-                    <strong><?php _e('Update Available!', 'trackpress'); ?></strong>
-                    <?php printf(
-                        __('Version %s is available. <a href="%s">Update now</a>.', 'trackpress'),
-                        esc_html($remote_info->version),
-                        admin_url('update-core.php')
-                    ); ?>
-                </p>
-            </div>
-        <?php endif; ?>
+        <p class="description"><?php _e('User and Visitor Tracking Plugin', 'trackpress'); ?></p>
     </div>
 
     <div class="about-container">

@@ -690,26 +690,77 @@ class Admin_Pages
     // Update notice in admin
     public function update_notice()
     {
-        if (empty($this->plugin_data)) {
+        // Get current screen
+        $screen = get_current_screen();
+
+        // Only show on specific pages
+        $allowed_screens = [
+            'plugins',                     // Plugins page
+            'toplevel_page_trackpress',    // TrackPress main page
+            'trackpress_page_trackpress-about',  // About page
+            'trackpress_page_trackpress-settings', // Settings page
+            'trackpress_page_trackpress-users',   // Users page
+            'trackpress_page_trackpress-visitors', // Visitors page
+            'trackpress_page_trackpress-admin',   // Admin page
+        ];
+
+        // Check if current screen is allowed
+        if (!$screen || !in_array($screen->id, $allowed_screens)) {
+            return;
+        }
+
+        // Don't show if we're on the update-core.php page
+        if ($screen->id === 'update-core') {
+            return;
+        }
+
+        // Refresh plugin data to ensure we have current version
+        if (empty($this->plugin_data) || !isset($this->plugin_data['Version'])) {
+            $this->refresh_plugin_data();
+        }
+
+        if (empty($this->plugin_data) || !isset($this->plugin_data['Version'])) {
             return;
         }
 
         $remote_info = $this->get_remote_info();
 
+        // Double-check if update is really needed
         if ($remote_info && version_compare($remote_info->version, $this->plugin_data['Version'], '>')) {
             ?>
             <div class="notice notice-warning is-dismissible">
                 <p>
                     <strong><?php echo esc_html($this->plugin_data['Name']); ?>:</strong>
-                    <?php printf(
+                    <?php
+                    printf(
                         __('A new version (%s) is available. <a href="%s">View update details</a> or <a href="%s">update now</a>.', 'trackpress'),
                         esc_html($remote_info->version),
                         admin_url('admin.php?page=trackpress-about'),
                         admin_url('update-core.php')
-                    ); ?>
+                    );
+                    ?>
                 </p>
             </div>
             <?php
+        }
+    }
+
+    /**
+     * Refresh plugin data from file (not from cache)
+     * Add this method if you don't have it already
+     */
+    private function refresh_plugin_data()
+    {
+        if (!function_exists('get_plugin_data')) {
+            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+
+        if (defined('TRACKPRESS_PLUGIN_FILE')) {
+            $this->plugin_data = get_plugin_data(TRACKPRESS_PLUGIN_FILE);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('TrackPress: Refreshed plugin data - Version: ' . ($this->plugin_data['Version'] ?? 'N/A'));
+            }
         }
     }
 
