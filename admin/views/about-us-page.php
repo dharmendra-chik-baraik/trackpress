@@ -5,12 +5,12 @@
 ?>
 <div class="wrap trackpress-about">
     <div class="trackpress-header">
+        <img style="width:240px;" src="<?php echo esc_url(TRACKPRESS_PLUGIN_URL . 'assets/logo.png'); ?>"
+            alt="TrackPress Logo" class="trackpress-logo">
         <h1 class="trackpress-title">
-            <span class="dashicons dashicons-chart-area"></span>
-            TrackPress
+            About TrackPress
             <span class="version">v<?php echo esc_html($current_version); ?></span>
         </h1>
-        <p class="description"><?php _e('User and Visitor Tracking Plugin', 'trackpress'); ?></p>
     </div>
 
     <div class="about-container">
@@ -154,6 +154,9 @@
         margin: 20px 0;
         border: 1px solid #c3c4c7;
         box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .trackpress-title {
@@ -298,6 +301,7 @@
         align-items: center;
         gap: 5px;
     }
+
     .flex {
         display: flex;
         align-items: center;
