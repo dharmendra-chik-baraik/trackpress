@@ -23,10 +23,13 @@ class Admin_Pages
         add_action('admin_init', [$this, 'init_settings']);
         add_action('admin_init', [$this, 'handle_table_actions']);
 
-        // Plugin action links
-        add_action('init', function () {
-            add_filter('plugin_action_links_' . TRACKPRESS_PLUGIN_BASENAME, [$this, 'add_plugin_action_links']);
-        });
+        // Plugin action links - Use plugins_loaded with priority
+        // add_action('plugins_loaded', function () {
+            if (defined('TRACKPRESS_PLUGIN_BASENAME')) {
+                add_filter('plugin_action_links_' . TRACKPRESS_PLUGIN_BASENAME, [$this, 'add_plugin_action_links']);
+                error_log('TrackPress: Action links filter registered via plugins_loaded');
+            }
+        // });
     }
 
     /**
@@ -334,6 +337,7 @@ class Admin_Pages
 
     public function add_plugin_action_links($links)
     {
+        error_log('TrackPress: Adding plugin action links...');
         $settings_link = '<a href="' . admin_url('admin.php?page=trackpress-settings') . '">' . __('Settings', 'trackpress') . '</a>';
         $logs_link = '<a href="' . admin_url('admin.php?page=trackpress') . '">' . __('Dashboard', 'trackpress') . '</a>';
         $about_link = '<a href="' . admin_url('admin.php?page=trackpress-about') . '">' . __('About', 'trackpress') . '</a>';
