@@ -690,6 +690,11 @@ class Admin_Pages
     // Update notice in admin
     public function update_notice()
     {
+        // Don't show notice on AJAX requests
+        if (wp_doing_ajax()) {
+            return;
+        }
+
         // Get current screen
         $screen = get_current_screen();
 
@@ -714,6 +719,19 @@ class Admin_Pages
             return;
         }
 
+        // CRITICAL FIX: Check if WordPress has already processed updates
+        // Get updates transient to see what WordPress thinks is available
+        $updates = get_site_transient('update_plugins');
+
+        if (isset($updates->response) && is_array($updates->response)) {
+            $plugin_slug = plugin_basename(TRACKPRESS_PLUGIN_FILE);
+
+            // If our plugin is NOT in the updates array, WordPress thinks we're up-to-date
+            if (!isset($updates->response[$plugin_slug])) {
+                return; // No notice needed
+            }
+        }
+
         // Refresh plugin data to ensure we have current version
         if (empty($this->plugin_data) || !isset($this->plugin_data['Version'])) {
             $this->refresh_plugin_data();
@@ -723,10 +741,36 @@ class Admin_Pages
             return;
         }
 
+        $current_version = $this->plugin_data['Version'];
         $remote_info = $this->get_remote_info();
 
         // Double-check if update is really needed
-        if ($remote_info && version_compare($remote_info->version, $this->plugin_data['Version'], '>')) {
+        if ($remote_info && version_compare($remote_info->version, $current_version, '>')) {
+
+            // IMPORTANT: Check if we just updated to this version
+            // Compare with what we have stored as the last version
+            $last_version = get_option('trackpress_last_version', '0');
+
+            // If we just updated to this exact remote version, don't show notice
+            if (version_compare($current_version, $remote_info->version, '>=')) {
+                // We're already on this version or newer
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('TrackPress: Already on version ' . $current_version .
+                        ', remote is ' . $remote_info->version . ' - NOT showing notice');
+                }
+                return;
+            }
+
+            // Also check if we're in the process of updating
+            // WordPress sets this during update
+            if (get_transient('trackpress_updating')) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('TrackPress: Currently updating, not showing notice');
+                }
+                return;
+            }
+
+            // Show the notice
             ?>
             <div class="notice notice-warning is-dismissible">
                 <p>
@@ -742,9 +786,18 @@ class Admin_Pages
                 </p>
             </div>
             <?php
+        } else {
+            // No update available or couldn't get remote info
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                if ($remote_info) {
+                    error_log('TrackPress: No update needed. Current: ' . $current_version .
+                        ', Remote: ' . $remote_info->version);
+                } else {
+                    error_log('TrackPress: No remote info available for update notice');
+                }
+            }
         }
     }
-
     /**
      * Refresh plugin data from file (not from cache)
      * Add this method if you don't have it already
@@ -819,40 +872,122 @@ class Admin_Pages
         // Always refresh plugin data first to get current version from file
         $this->refresh_plugin_data();
 
-        // Get current version
+        // Get current version from plugin file
         $current_version = $this->plugin_data['Version'] ?? '1.0.0';
 
-        // Get last tracked version
+        // Get last tracked version from database
         $last_version = get_option('trackpress_last_version', '0');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('TrackPress: check_plugin_updated() - Current: ' . $current_version .
+                ', Last: ' . $last_version);
+        }
 
         // If version changed (plugin was updated)
         if (version_compare($current_version, $last_version, '>')) {
-            // Get remote info to compare
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('TrackPress: Version changed from ' . $last_version . ' to ' . $current_version);
+            }
+
+            // Set a transient to indicate we're updating (prevents update notice)
+            set_transient('trackpress_updating', true, 60); // 1 minute
+
+            // Get remote info to see what version is available
             $remote_info = $this->get_remote_info();
 
-            // If remote version exists and matches current version
-            if (
-                $remote_info && isset($remote_info->version) &&
-                version_compare($remote_info->version, $current_version, '==')
-            ) {
+            // IMPORTANT: Clear all update caches regardless of remote version
+            $this->force_clear_update_cache();
 
-                // Clear the transient since we're now at the latest version
-                delete_transient('trackpress_remote_info');
+            // Update the stored version in database
+            update_option('trackpress_last_version', $current_version);
 
-                // Also clear WordPress plugins cache to force fresh check
-                wp_clean_plugins_cache();
+            // Check if we're now on the latest version
+            if ($remote_info && isset($remote_info->version)) {
+                if (version_compare($current_version, $remote_info->version, '==')) {
+                    // We just updated to the latest version
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('TrackPress: Updated to latest version ' . $current_version);
+                    }
 
-                // Clear update_plugins transient to remove the update notice
-                delete_site_transient('update_plugins');
+                    // Clear remote info cache to get fresh data next time
+                    delete_transient('trackpress_remote_info');
 
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('TrackPress: Plugin updated to latest version ' . $current_version .
-                        '. Clearing update cache.');
+                    // Schedule a delayed cache refresh to ensure proper update detection
+                    wp_schedule_single_event(time() + 5, 'trackpress_refresh_update_cache');
+                } else if (version_compare($current_version, $remote_info->version, '>')) {
+                    // We're on a newer version (development version)
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('TrackPress: On development version ' . $current_version .
+                            ' (newer than remote ' . $remote_info->version . ')');
+                    }
                 }
             }
 
-            // Update the stored version
+            // Add hook to clear updating transient after page load
+            add_action('shutdown', [$this, 'clear_updating_transient']);
+
+        } else if (version_compare($current_version, $last_version, '<')) {
+            // Version went backwards (unusual, but could happen)
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('TrackPress: Version went backwards from ' . $last_version .
+                    ' to ' . $current_version);
+            }
             update_option('trackpress_last_version', $current_version);
+            $this->force_clear_update_cache();
+        }
+    }
+
+    /**
+     * Force clear all update caches
+     */
+    private function force_clear_update_cache()
+    {
+        // Clear WordPress update transients
+        delete_site_transient('update_plugins');
+
+        // Clear our custom remote info transient
+        delete_transient('trackpress_remote_info');
+
+        // Clear WordPress plugins cache
+        wp_clean_plugins_cache();
+
+        // Clear the updates cache in user meta (for current user)
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            delete_user_meta($user_id, 'dismissed_update_core');
+            delete_user_meta($user_id, 'dismissed_update_plugins');
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('TrackPress: Force cleared all update caches');
+        }
+    }
+
+    /**
+     * Clear the updating transient after page load
+     */
+    public function clear_updating_transient()
+    {
+        delete_transient('trackpress_updating');
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('TrackPress: Cleared updating transient');
+        }
+    }
+
+    /**
+     * Refresh update cache (scheduled event)
+     */
+    public function refresh_update_cache()
+    {
+        // Force a fresh check
+        delete_site_transient('update_plugins');
+        delete_transient('trackpress_remote_info');
+
+        // Manually trigger update check
+        wp_update_plugins();
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('TrackPress: Manually refreshed update cache');
         }
     }
 }
