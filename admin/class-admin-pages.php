@@ -22,13 +22,14 @@ class Admin_Pages
         add_action('admin_menu', [$this, 'add_admin_menus']);
         add_action('admin_init', [$this, 'init_settings']);
         add_action('admin_init', [$this, 'handle_table_actions']);
+        add_action('admin_init', [$this, 'check_plugin_updated']);
 
         // Plugin action links - Use plugins_loaded with priority
         // add_action('plugins_loaded', function () {
-            if (defined('TRACKPRESS_PLUGIN_BASENAME')) {
-                add_filter('plugin_action_links_' . TRACKPRESS_PLUGIN_BASENAME, [$this, 'add_plugin_action_links']);
-                error_log('TrackPress: Action links filter registered via plugins_loaded');
-            }
+        if (defined('TRACKPRESS_PLUGIN_BASENAME')) {
+            add_filter('plugin_action_links_' . TRACKPRESS_PLUGIN_BASENAME, [$this, 'add_plugin_action_links']);
+            error_log('TrackPress: Action links filter registered via plugins_loaded');
+        }
         // });
     }
 
@@ -757,5 +758,44 @@ class Admin_Pages
         }
 
         echo '</div>';
+    }
+
+    /**
+     * Check if plugin was just updated and clear transient if versions match
+     */
+    public function check_plugin_updated()
+    {
+        // Get current version
+        $current_version = $this->plugin_data['Version'] ?? '1.0.0';
+
+        // Get last tracked version
+        $last_version = get_option('trackpress_last_version', '0');
+
+        // If version changed (plugin was updated)
+        if (version_compare($current_version, $last_version, '>')) {
+            // Get remote info to compare
+            $remote_info = $this->get_remote_info();
+
+            // If remote version exists and matches current version
+            if (
+                $remote_info && isset($remote_info->version) &&
+                version_compare($remote_info->version, $current_version, '==')
+            ) {
+
+                // Clear the transient since we're now at the latest version
+                delete_transient('trackpress_remote_info');
+
+                // Also clear WordPress plugins cache to force fresh check
+                wp_clean_plugins_cache();
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('TrackPress: Plugin updated to latest version ' . $current_version .
+                        '. Clearing update cache.');
+                }
+            }
+
+            // Update the stored version
+            update_option('trackpress_last_version', $current_version);
+        }
     }
 }
