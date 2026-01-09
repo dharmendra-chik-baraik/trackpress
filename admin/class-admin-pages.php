@@ -141,7 +141,7 @@ class Admin_Pages
         $recent_visitors = \TrackPress\Database::get_visitor_logs(5);
         $recent_admin = \TrackPress\Database::get_admin_logs(5);
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/dashboard.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/dashboard-page.php';
     }
 
     public function render_users_page()
@@ -164,7 +164,7 @@ class Admin_Pages
         // Get logs
         $logs = \TrackPress\Database::get_user_logs($per_page, $offset);
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/users-tracking.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/users-tracking-page.php';
     }
 
     public function render_visitors_page()
@@ -187,7 +187,7 @@ class Admin_Pages
         // Get logs
         $logs = \TrackPress\Database::get_visitor_logs($per_page, $offset);
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/visitors-tracking.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/visitors-tracking-page.php';
     }
 
     public function render_admin_page()
@@ -210,7 +210,7 @@ class Admin_Pages
         // Get logs
         $logs = \TrackPress\Database::get_admin_logs($per_page, $offset);
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/admin-tracking.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/admin-tracking-page.php';
     }
 
     public function render_settings_page()
@@ -226,7 +226,7 @@ class Admin_Pages
             echo '<div class="notice notice-success is-dismissible"><p>' . __('Settings saved successfully.', 'trackpress') . '</p></div>';
         }
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/settings.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/settings-page.php';
     }
 
     public function handle_table_actions()
@@ -442,7 +442,7 @@ class Admin_Pages
             'description' => $this->plugin_data['Description'] ?? ''
         ];
 
-        include TRACKPRESS_PLUGIN_DIR . 'admin/views/about.php';
+        include TRACKPRESS_PLUGIN_DIR . 'admin/views/about-us-page.php';
     }
 
     // Get remote version information from GitHub
@@ -816,6 +816,9 @@ class Admin_Pages
      */
     public function check_plugin_updated()
     {
+        // Always refresh plugin data first to get current version from file
+        $this->refresh_plugin_data();
+
         // Get current version
         $current_version = $this->plugin_data['Version'] ?? '1.0.0';
 
@@ -838,6 +841,9 @@ class Admin_Pages
 
                 // Also clear WordPress plugins cache to force fresh check
                 wp_clean_plugins_cache();
+
+                // Clear update_plugins transient to remove the update notice
+                delete_site_transient('update_plugins');
 
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('TrackPress: Plugin updated to latest version ' . $current_version .
